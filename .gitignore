@@ -1,0 +1,15 @@
+# Entorno Virtual
+venv/
+__pycache__/
+*.pyc
+
+# Variables de Entorno
+.env
+
+# Node.js
+node_modules/
+npm-debug.log
+
+# Archivos de logs y temporales
+*.log
+productos_tia.json
