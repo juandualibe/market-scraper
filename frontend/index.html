@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cherry Market - Comparador Córdoba</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="container mx-auto px-4 py-10 max-w-5xl">
+        <header class="flex flex-col items-center mb-12">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-5xl">🍒</span>
+                <h1 class="text-4xl font-black text-slate-800 tracking-tight">CHERRY MARKET</h1>
+            </div>
+            <p class="text-slate-500 font-medium">Comparativa de Precios Real-Time • Córdoba 2026</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Productos Indexados</p>
+                <div class="flex items-end gap-2">
+                    <h2 id="stat-total" class="text-3xl font-black text-slate-800">0</h2>
+                    <span class="text-slate-400 text-sm mb-1">ítems</span>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tienda con más oferta</p>
+                <h2 id="stat-tienda" class="text-xl font-bold text-red-600">Calculando...</h2>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Última Actualización</p>
+                <h2 class="text-xl font-bold text-slate-700">Hoy, 6 de Mayo</h2>
+            </div>
+        </div>
+
+        <div class="relative max-w-2xl mx-auto mb-10">
+            <input type="text" id="busqueda" onkeyup="if(event.key === 'Enter') buscarProductos()"
+                placeholder="Ej: Aceite Natura, Vinagre de Manzana..." 
+                class="w-full p-4 pl-6 text-lg rounded-2xl border-none shadow-md focus:ring-4 focus:ring-red-100 transition-all outline-none text-slate-700">
+            <button onclick="buscarProductos()" 
+                class="absolute right-3 top-2 bottom-2 bg-red-600 text-white px-6 rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
+                Buscar
+            </button>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
+            <table class="w-full text-left">
+                <thead class="bg-slate-800 text-white">
+                    <tr>
+                        <th class="p-5 font-bold uppercase text-xs tracking-widest">Producto</th>
+                        <th class="p-5 font-bold uppercase text-xs tracking-widest">Supermercado</th>
+                        <th class="p-5 font-bold uppercase text-xs tracking-widest text-right">Precio Actual</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-productos" class="divide-y divide-slate-100">
+                    </tbody>
+            </table>
+            
+            <div id="loader" class="hidden p-20 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
+                <p class="mt-4 text-slate-500 font-medium">Consultando a los servidores...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        async function cargarInicial() {
+            mostrarLoader(true);
+            try {
+                const res = await fetch(`${API_URL}/productos`);
+                const data = await res.json();
+                renderizar(data);
+            } catch (error) {
+                console.error("Error cargando API:", error);
+            } finally {
+                mostrarLoader(false);
+            }
+        }
+
+        async function buscarProductos() {
+            const query = document.getElementById('busqueda').value;
+            if (!query) return cargarInicial();
+
+            mostrarLoader(true);
+            try {
+                const res = await fetch(`${API_URL}/productos/buscar?q=${query}`);
+                const data = await res.json();
+                renderizar(data);
+            } catch (error) {
+                console.error("Error buscando:", error);
+            } finally {
+                mostrarLoader(false);
+            }
+        }
+
+        function renderizar(productos) {
+            // Actualizar Stats
+            document.getElementById('stat-total').innerText = productos.length;
+            const veaCount = productos.filter(p => p.tienda === 'Vea Digital').length;
+            const libCount = productos.filter(p => p.tienda === 'Hiper Libertad').length;
+            document.getElementById('stat-tienda').innerText = veaCount >= libCount ? 'Vea Digital' : 'Hiper Libertad';
+
+            const tabla = document.getElementById('tabla-productos');
+            
+            if (productos.length === 0) {
+                tabla.innerHTML = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-medium italic">No se encontraron productos...</td></tr>`;
+                return;
+            }
+
+            tabla.innerHTML = productos.map(p => `
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="p-5">
+                        <div class="text-slate-800 font-bold group-hover:text-red-600 transition-colors">${p.nombre}</div>
+                        <div class="text-[10px] text-slate-400 font-bold uppercase mt-1">${p.subcategoria || 'General'}</div>
+                    </td>
+                    <td class="p-5">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black tracking-wide ${
+                            p.tienda === 'Vea Digital' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-blue-100 text-blue-700'
+                        }">
+                            ${p.tienda.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="p-5 text-right font-black text-slate-900 text-xl">
+                        <span class="text-sm font-normal text-slate-400 mr-1">$</span>${p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function mostrarLoader(show) {
+            const loader = document.getElementById('loader');
+            const tabla = document.getElementById('tabla-productos');
+            if (show) {
+                loader.classList.remove('hidden');
+                tabla.classList.add('hidden');
+            } else {
+                loader.classList.add('hidden');
+                tabla.classList.remove('hidden');
+            }
+        }
+
+        // Carga inicial al abrir la página
+        window.onload = cargarInicial;
+    </script>
+</body>
+</html>

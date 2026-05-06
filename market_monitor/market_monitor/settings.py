@@ -63,7 +63,7 @@ DOWNLOAD_DELAY = 2
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   "market_monitor.pipelines.MarketMonitorPipeline": 300,
+    'market_monitor.pipelines.MarketMonitorPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
